@@ -1,6 +1,6 @@
 ﻿# YouTube Q&A System
 
-This project enables users to ask questions about YouTube videos and receive relevant answers by processing the video's transcript. It uses ChromaDB for vector storage and retrieval, and modular utilities for chunking, embedding, QA, and exporting.
+This project enables users to ask questions about YouTube videos and receive relevant answers by processing the video's transcript. It uses FAISS for vector storage and retrieval, and modular utilities for chunking, embedding, QA, and exporting.
 
 ---
 
@@ -8,7 +8,7 @@ This project enables users to ask questions about YouTube videos and receive rel
 
 - ✅ Extracts transcripts from YouTube videos
 - ✅ Chunks transcripts for better vectorization
-- ✅ Embeds and stores chunks using ChromaDB
+- ✅ Embeds and stores chunks using FAISS
 - ✅ Answers questions using semantic search and LLMs
 - ✅ Exports results if needed
 - ✅ Streamlit interface for ease of use
