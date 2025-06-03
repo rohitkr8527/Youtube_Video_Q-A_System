@@ -3,7 +3,7 @@ from langchain_groq import ChatGroq
 
 def build_qa_chain(vectordb):
     llm = ChatGroq(
-        api_key="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",
+        api_key="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",
         model="llama3-8b-8192",
         temperature=0.5
     )
