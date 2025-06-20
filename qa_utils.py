@@ -1,10 +1,11 @@
 from langchain.chains import RetrievalQA
 from langchain_groq import ChatGroq
+import os
 
 def build_qa_chain(vectordb):
     llm = ChatGroq(
-        api_key=" Enter_Your_Groq_API_Key",
-        model="llama3-8b-8192",
+        api_key=os.environ.get("GROQ_API_KEY"),
+        model="llama-3.3-70b-versatile",
         temperature=0.5
     )
 
