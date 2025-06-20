@@ -2,7 +2,7 @@
  ![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![LangChain](https://img.shields.io/badge/LangChain-0000FF?style=for-the-badge&logo=langchain&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-000000?style=for-the-badge&logo=groq&logoColor=white)
+![Groq](https://img.shields.io/badge/Groq-FFA500?style=for-the-badge&logo=groq&logoColor=white)
 ![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21F?style=for-the-badge&logo=huggingface&logoColor=black)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
 
@@ -69,6 +69,9 @@ pip install -r requirements.txt
 ```bash
 streamlit run app.py
 ```
+
+---
+![UI Preview](./ui.png)
 
 ---
 
