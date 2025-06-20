@@ -1,8 +1,12 @@
 from langchain.chains import RetrievalQA
 from langchain_groq import ChatGroq
 import os
+import streamlit as st
 
 def build_qa_chain(vectordb):
+
+    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
     llm = ChatGroq(
         api_key=os.environ.get("GROQ_API_KEY"),
         model="llama-3.3-70b-versatile",
