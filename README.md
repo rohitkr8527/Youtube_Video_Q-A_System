@@ -71,6 +71,8 @@ streamlit run app.py
 ```
 
 ---
+## UI Preview
+
 ![UI Preview](./ui.png)
 
 ---
