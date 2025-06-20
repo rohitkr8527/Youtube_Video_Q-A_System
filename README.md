@@ -1,10 +1,14 @@
-﻿# YouTube Q&A System
+﻿# ![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)YouTube Q&A System
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=ffdd54)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21F?style=for-the-badge&logo=huggingface&logoColor=black)
+![Scikit-learn](https://img.shields.io/badge/Scikit--learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
+
 
 This project enables users to ask questions about YouTube videos and receive relevant answers by processing the video's transcript. It uses FAISS for vector storage and retrieval, and modular utilities for chunking, embedding, QA, and exporting.
 
 ---
 
-## 🔧 Features
+## Features
 
 - ✅ Extracts transcripts from YouTube videos
 - ✅ Chunks transcripts for better vectorization
@@ -15,7 +19,7 @@ This project enables users to ask questions about YouTube videos and receive rel
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 ├── app.py                    # Streamlit web app
@@ -31,7 +35,7 @@ This project enables users to ask questions about YouTube videos and receive rel
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
 
@@ -65,7 +69,7 @@ streamlit run app.py
 
 ---
 
-## 🧠 How It Works
+## How It Works
 
 1. **Transcript Extraction**: `transcript_utils.py` downloads and formats the transcript.
 2. **Chunking**: `chunk_utils.py` splits the transcript into overlapping chunks.
@@ -87,7 +91,7 @@ See `requirements.txt`. Key libraries include:
 
 ---
 
-## 📌 Future Improvements
+## Future Improvements
 
 - Multilingual transcript support
 - Enhanced semantic chunking
@@ -95,7 +99,7 @@ See `requirements.txt`. Key libraries include:
 
 ---
 
-## 👨‍💻 Author
+## 👨‍💻 
 
 Developed by Rohit Kumar
 
