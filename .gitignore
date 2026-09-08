@@ -1,4 +1,12 @@
 __pycache__/
+*.py[cod]
 .env
+.venv/
+venv/
+.pytest_cache/
 .streamlit/secrets.toml
-
+data/qdrant/
+data/videos/
+data/logs/
+coverage.xml
+htmlcov/

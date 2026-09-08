@@ -1,118 +1,154 @@
-﻿# YouTube Q&A System
- ![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=ffdd54)
-![LangChain](https://img.shields.io/badge/LangChain-0000FF?style=for-the-badge&logo=langchain&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-FFA500?style=for-the-badge&logo=groq&logoColor=white)
-![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21F?style=for-the-badge&logo=huggingface&logoColor=black)
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+# VideoRAG(Youtube Video Q&A System)
 
+VideoRAG is an advanced, user-focused YouTube question-answering system built as an AI engineering project rather than a basic vector-search demo.
 
-This project enables users to ask questions about YouTube videos and receive relevant answers by processing the video's transcript. It uses FAISS for vector storage and retrieval, and modular utilities for chunking, embedding, QA, and exporting.
+It uses timestamp-aware semantic chunking, dense + sparse hybrid retrieval, cross-encoder reranking, agentic query planning, self-corrective retrieval, grounded generation, evaluation, and internal tracing. The frontend stays intentionally simple and hides backend implementation details from users.
 
----
+## Product features
 
-## Features
+- Paste a YouTube URL and prepare the video for questions.
+- Ask natural follow-up questions in a chat interface.
+- Receive grounded answers with clickable timestamp sources.
+- Generate a structured summary.
+- Generate study notes.
+- Take an interactive multiple-choice quiz.
+- Automatically retry retrieval once when evidence is weak.
+- Refuse unsupported answers instead of hallucinating.
 
-- ✅ Extracts transcripts from YouTube videos
-- ✅ Chunks transcripts for better vectorization
-- ✅ Embeds and stores chunks using FAISS
-- ✅ Answers questions using semantic search and LLMs
-- ✅ Exports results if needed
-- ✅ Streamlit interface for ease of use
+## AI engineering architecture
 
----
+1. YouTube transcript ingestion with timestamps.
+2. Semantic + timestamp-aware chunking.
+3. BGE dense embeddings stored in persistent local Qdrant.
+4. BM25 sparse retrieval.
+5. Reciprocal Rank Fusion.
+6. Cross-encoder reranking.
+7. GPT-OSS 120B query planning and rewriting.
+8. Evidence grading and corrective retrieval.
+9. GPT-OSS 120B grounded answer generation.
+10. Grounding verification with one controlled regeneration.
+11. Retrieval evaluation and JSONL tracing.
 
-## Project Structure
+Only one LLM is used throughout the project:
 
+```text
+openai/gpt-oss-120b via Groq
 ```
-├── app.py                    # Streamlit web app
-├── main.py                   # Main logic and orchestration
-├── chunk_utils.py            # Utilities for chunking transcripts
-├── export_utils.py           # Handles exporting of results
-├── qa_utils.py               # Core question-answering logic
-├── transcript_utils.py       # Download and process YouTube transcripts
-├── vector_store_utils.py     # Embedding and ChromaDB vector storage
-├── requirements.txt          # Required packages
-└── README.md                 # Documentation
+
+## Requirements
+
+- Python 3.11+
+- A Groq API key
+- Internet access on first run to download embedding/reranker models and fetch YouTube transcripts
+
+Qdrant runs in persistent local mode, so the project does not need a separate vector database service.
+
+## Setup
+
+### 1. Create a virtual environment
+
+Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
----
-
-## Getting Started
-
-### 1. Clone the Repository
+macOS/Linux:
 
 ```bash
-git clone https://github.com/yourusername/youtube-qa-system.git
-cd youtube-qa-system
+python -m venv .venv
+source .venv/bin/activate
 ```
 
-### 2. Set Up Virtual Environment
-
-```bash
-python -m venv venv
-# Activate the virtual environment
-# On macOS/Linux:
-source venv/bin/activate
-# On Windows:
-venv\Scripts\activate
-```
-
-### 3. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Run the App
+### 3. Add environment variables
 
-```bash
-streamlit run app.py
+Copy `.env.example` to `.env` and add your Groq key:
+
+```env
+GROQ_API_KEY=your_key_here
 ```
 
----
-## UI Preview
+### 4. Start the complete product
 
-![UI Preview](./ui.png)
+```bash
+python run_app.py
+```
 
----
+Then open:
 
-## How It Works
+```text
+http://localhost:8501
+```
 
-1. **Transcript Extraction**: `transcript_utils.py` downloads and formats the transcript.
-2. **Chunking**: `chunk_utils.py` splits the transcript into overlapping chunks.
-3. **Embedding & Storage**: `vector_store_utils.py` embeds and stores chunks in FAISS.
-4. **Q&A**: `qa_utils.py` searches for relevant chunks and uses an LLM to generate answers.
-5. **Export**: `export_utils.py` handles exporting answers and context if required.
+You can also start the services separately:
 
----
+```bash
+uvicorn app.main:app --reload
+streamlit run frontend/app.py
+```
 
-## 🧾 Dependencies
+## API endpoints
 
-See `requirements.txt`. Key libraries include:
+```text
+GET  /health
+POST /videos/process
+GET  /videos/{video_id}
+POST /chat
+POST /summary
+POST /notes
+POST /quiz
+```
 
-- `streamlit`
-- `FAISS`
-- `openai` or `groq` or any llm-chatmodel
-- `youtube-transcript-api`
-- `langchain`
+## Evaluation
 
----
+An example dataset is included at `evaluation/datasets/sample.jsonl`.
 
-## Future Improvements
+Run retrieval evaluation after a video has been indexed:
 
-- Multilingual transcript support
-- Enhanced semantic chunking
-- Customizable embedding models
+```bash
+python -m app.evaluation.evaluator --dataset evaluation/datasets/sample.jsonl
+```
 
----
+The evaluator reports Recall@K, Precision@K, MRR, and NDCG. Expected relevant chunk IDs in the dataset should be updated for the video you evaluate.
 
-## 👨‍💻 
+## Tests
 
-Developed by Rohit Kumar
+```bash
+pytest -q
+```
 
-Feel free to fork, modify, and contribute!
+Tests are designed to cover pure logic without requiring Groq or YouTube network calls.
 
----
+## Project structure
 
+```text
+app/
+  api/              FastAPI routes
+  ingestion/        YouTube, transcript and chunking
+  retrieval/        Dense, sparse, fusion and reranking
+  reasoning/        Query planning, evidence grading, grounding
+  generation/       Answers, summaries, notes, quizzes and citations
+  database/         Qdrant and cache integrations
+  evaluation/       Retrieval metrics and evaluator
+  observability/    Structured tracing
+frontend/           Streamlit product UI
+evaluation/         Evaluation datasets/results
+tests/              Unit tests
+```
 
+## Important design choices
+
+- The Streamlit UI never shows vector scores, model names, databases, chunk IDs, agent states, token counts, or internal prompts.
+- Corrective RAG is capped at one retrieval retry and one answer regeneration.
+- Deterministic tasks such as timestamp formatting, RRF, filtering, and citation URL creation are done in Python, not with the LLM.
+- Redis support is optional. If `REDIS_URL` is empty or Redis is unavailable, the application falls back to an in-memory cache.
+- This version intentionally supports one active video experience at a time in the frontend. Multi-video knowledge bases and playlists are out of scope for now.
+
+See `docs/ARCHITECTURE.md` for the finalized design specification.
