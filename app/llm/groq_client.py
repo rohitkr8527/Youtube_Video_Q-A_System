@@ -76,22 +76,60 @@ class GroqLLM:
             )
             data = json.loads(response.choices[0].message.content or "{}")
             return schema.model_validate(data)
-        except (BadRequestError, json.JSONDecodeError, ValidationError):
-            # Fallback keeps the product usable if a future schema detail changes.
-            response = self.client.chat.completions.create(
-                model=self.settings.groq_model,
-                messages=messages
-                + [
-                    {
-                        "role": "system",
-                        "content": "Return valid JSON only. Do not include markdown fences.",
-                    }
-                ],
-                temperature=0,
-                max_completion_tokens=max_tokens,
-                reasoning_effort=reasoning_effort,
-                reasoning_format="hidden",
-                response_format={"type": "json_object"},
+        except (BadRequestError, json.JSONDecodeError, ValidationError) as first_error:
+            last_error = first_error
+
+            repair_messages = messages + [
+                {
+                    "role": "system",
+                    "content": (
+                        "Return valid JSON only. "
+                        "The JSON must match this schema exactly. "
+                        "Include every required field. "
+                        "Do not rename fields. "
+                        "Do not include markdown fences.\n\n"
+                        f"JSON schema:\n{json.dumps(json_schema)}"
+                    ),
+                }
+            ]
+
+            # Two repair attempts before failing.
+            for _ in range(2):
+                response = self.client.chat.completions.create(
+                    model=self.settings.groq_model,
+                    messages=repair_messages,
+                    temperature=0,
+                    max_completion_tokens=max_tokens,
+                    reasoning_effort=reasoning_effort,
+                    reasoning_format="hidden",
+                    response_format={"type": "json_object"},
+                )
+
+                raw = response.choices[0].message.content or "{}"
+
+                try:
+                    data = json.loads(raw)
+                    return schema.model_validate(data)
+
+                except (json.JSONDecodeError, ValidationError) as error:
+                    last_error = error
+
+                    repair_messages = repair_messages + [
+                        {
+                            "role": "assistant",
+                            "content": raw,
+                        },
+                        {
+                            "role": "system",
+                            "content": (
+                                "The previous JSON did not match the required schema. "
+                                f"Validation error:\n{error}\n\n"
+                                "Correct it and return ONLY the corrected JSON object."
+                            ),
+                        },
+                    ]
+
+            raise RuntimeError(
+                f"Failed to obtain valid structured output for '{name}' "
+                f"after repair attempts: {last_error}"
             )
-            data = json.loads(response.choices[0].message.content or "{}")
-            return schema.model_validate(data)
