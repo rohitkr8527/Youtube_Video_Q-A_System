@@ -1,0 +1,23 @@
+{
+  "videos": 10,
+  "questions": 120,
+  "answerable_questions": 100,
+  "unanswerable_questions": 20,
+  "recall_at_1": 0.88,
+  "recall_at_3": 1.0,
+  "recall_at_5": 1.0,
+  "mrr": 0.9333333333333333,
+  "faithfulness": 0.9851,
+  "answer_relevance": 0.9889,
+  "citation_hit_rate": 0.526595744680851,
+  "citation_correct": 198,
+  "citation_total": 376,
+  "abstention_accuracy": 0.9,
+  "correct_abstentions": 18,
+  "correction_attempts_after_initial_miss": 0,
+  "correction_recoveries": 0,
+  "correction_recovery_rate": 0.0,
+  "p50_latency_ms": 51952.825,
+  "p95_latency_ms": 85745.0855,
+  "failed_cases": 0
+}
