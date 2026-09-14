@@ -1,148 +1,277 @@
-# VideoRAG
+<div align="center">
 
-VideoRAG is a YouTube question-answering application that produces grounded answers with clickable timestamp citations. It combines transcript ingestion, hybrid retrieval, reranking, query planning, evidence grading, corrective retrieval, and grounding verification behind a Streamlit interface and FastAPI backend.
+# 🎬 VideoRAG
 
-## Features
+### Grounded YouTube intelligence with hybrid retrieval and timestamp citations
 
-- Process a YouTube video from its URL.
-- Ask questions and maintain conversational context.
-- Cite supporting transcript sections with clickable timestamps.
-- Generate summaries, study notes, and multiple-choice quizzes.
-- Retry retrieval when the initial evidence is weak.
-- Decline unsupported questions when reliable evidence is unavailable.
-- Record structured traces for retrieval and generation operations.
+Turn a YouTube video into a searchable knowledge source. Ask follow-up questions, verify answers against exact moments, generate study material, and measure retrieval quality through a reproducible evaluation pipeline.
 
-## Architecture
+<p>
+  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/FastAPI-API-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Streamlit-UI-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit">
+  <img src="https://img.shields.io/badge/Qdrant-Vector_DB-DC244C?style=for-the-badge&logo=qdrant&logoColor=white" alt="Qdrant">
+</p>
 
-The request pipeline consists of:
+<p>
+  <img src="https://img.shields.io/badge/Groq-GPT--OSS_120B-F55036?style=flat-square" alt="Groq GPT-OSS 120B">
+  <img src="https://img.shields.io/badge/Hugging_Face-Embeddings_&_Reranking-FFD21E?style=flat-square&logo=huggingface&logoColor=black" alt="Hugging Face models">
+  <img src="https://img.shields.io/badge/Redis-Optional_Cache-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis">
+  <img src="https://img.shields.io/badge/YouTube-Timestamp_Grounding-FF0000?style=flat-square&logo=youtube&logoColor=white" alt="YouTube">
+</p>
 
-1. Fetching timestamped YouTube transcripts.
-2. Semantic and timestamp-aware transcript chunking.
-3. Dense retrieval with BGE embeddings and local Qdrant storage.
-4. Sparse BM25 retrieval.
-5. Reciprocal Rank Fusion and cross-encoder reranking.
-6. Query planning, rewriting, and optional timestamp filtering.
-7. Evidence grading and one corrective-retrieval attempt.
-8. Grounded answer generation and one verification retry.
-9. Deterministic timestamp citation construction.
+<p>
+  <img src="https://img.shields.io/badge/evaluation-120_questions-4C1?style=flat-square" alt="120 evaluation questions">
+  <img src="https://img.shields.io/badge/Recall@5-100%25-brightgreen?style=flat-square" alt="100% Recall at 5">
+  <img src="https://img.shields.io/badge/tests-20_passing-brightgreen?style=flat-square" alt="20 passing tests">
+</p>
 
-LLM operations use `openai/gpt-oss-120b` through Groq. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for implementation details.
+</div>
 
-## Requirements
+---
+
+## Why this project matters
+
+VideoRAG goes beyond a basic vector-search demonstration. It treats retrieval, reasoning, grounding, evaluation, and product behavior as one measurable system.
+
+| Engineering capability | Implementation |
+|---|---|
+| High-recall search | BGE dense retrieval and BM25 sparse retrieval |
+| Ranking quality | Reciprocal Rank Fusion followed by cross-encoder reranking |
+| Conversational questions | History-aware query planning and standalone-query rewriting |
+| Complex questions | Optional decomposition into multiple search queries |
+| Weak evidence | Evidence grading and one bounded corrective search |
+| Hallucination control | Grounding verification and one constrained regeneration |
+| Verifiable answers | Deterministic citations linked to exact YouTube timestamps |
+| Measurable quality | 120-case benchmark covering retrieval, generation, safety, and latency |
+| Operability | Structured JSONL traces, persistent indexes, and graceful cache fallback |
+
+## Evaluation results
+
+The completed benchmark contains **120 questions across 10 technical videos** covering machine learning, databases, distributed systems, APIs, MCP, and large language models. It includes 100 timestamp-grounded answerable questions and 20 unsupported questions for abstention testing.
+
+| Category | Metric | Result |
+|---|---|---:|
+| Retrieval | Recall@1 | **88.0%** |
+| Retrieval | Recall@3 | **100.0%** |
+| Retrieval | Recall@5 | **100.0%** |
+| Retrieval | Mean Reciprocal Rank | **0.933** |
+| Answer quality | Faithfulness | **0.985** |
+| Answer quality | Answer relevance | **0.989** |
+| Grounding | Timestamp citation hit rate | **52.7%** (198/376) |
+| Safety | Abstention accuracy | **90.0%** (18/20) |
+| Performance | P50 end-to-end latency | **51.95 s** |
+| Performance | P95 end-to-end latency | **85.75 s** |
+
+No answerable case missed the ground-truth range at Recall@5, so the benchmark produced no eligible initial miss from which to measure corrective-retrieval recovery.
+
+Ground truth was generated from stored transcript windows independently of the retriever. Faithfulness and relevance were judged using the question, reference answer, generated answer, and retrieved evidence. The full methodology and outputs are available in [evaluation/README.md](evaluation/README.md) and [evaluation/results/evaluation_report.md](evaluation/results/evaluation_report.md).
+
+> **Result summary:** VideoRAG retrieved the correct timestamp range within its top five results for every answerable benchmark case while maintaining 0.985 faithfulness and 90% abstention accuracy.
+
+## Product experience
+
+- Paste a YouTube URL and index its transcript.
+- Ask factual, explanatory, comparative, and timestamp-specific questions.
+- Continue a conversation without repeating the original context.
+- Open cited evidence directly at the relevant point in the video.
+- Generate a structured summary or study notes.
+- Take an interactive multiple-choice quiz generated from the video.
+- Receive a clear refusal when the available transcript does not support an answer.
+
+The interface intentionally hides vector scores, prompts, chunk identifiers, model internals, and reasoning state. Users see the video, the answer, and the supporting timestamps.
+
+## System architecture
+
+```mermaid
+flowchart LR
+    User([User]) --> UI[Streamlit UI]
+    UI -->|HTTP / JSON| API[FastAPI]
+
+    API --> Ingest[Video ingestion]
+    API --> RAG[RAG orchestration]
+
+    Ingest --> YT[YouTube transcript]
+    Ingest --> Chunk[Semantic timestamp chunking]
+    Chunk --> Embed[BGE embeddings]
+    Embed --> Qdrant[(Local Qdrant)]
+    Chunk --> Files[(Video and chunk JSON)]
+
+    RAG --> Plan[Query planning]
+    Plan --> Dense[Dense retrieval]
+    Plan --> Sparse[BM25 retrieval]
+    Dense --> Fusion[Reciprocal Rank Fusion]
+    Sparse --> Fusion
+    Fusion --> Rerank[Cross-encoder reranking]
+    Rerank --> Grade[Evidence grading]
+    Grade --> Generate[Grounded generation]
+    Generate --> Verify[Grounding verification]
+    Verify --> Cite[Timestamp citations]
+    Cite --> UI
+
+    Plan -.-> LLM[Groq / GPT-OSS 120B]
+    Grade -.-> LLM
+    Generate -.-> LLM
+    Verify -.-> LLM
+```
+
+The detailed component, sequence, data-model, storage, deployment, and evaluation diagrams are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Request lifecycle
+
+1. The router converts the question and chat history into a strict query plan.
+2. Dense and sparse retrieval run against the selected video's chunks.
+3. Reciprocal Rank Fusion merges both rankings.
+4. A cross-encoder reranks the candidates and selects the strongest evidence.
+5. The evidence grader either accepts the context, improves the query, or rejects it.
+6. GPT-OSS 120B generates an evidence-bound answer.
+7. A grounding check validates the answer against the retrieved transcript.
+8. Verified answers receive deterministic timestamp citations; unsupported answers are withheld.
+
+## Technology stack
+
+| Layer | Technology | Role |
+|---|---|---|
+| Frontend | Streamlit | Single-video workspace, chat, notes, summaries, and quizzes |
+| API | FastAPI + Pydantic | Typed HTTP contracts and service boundary |
+| LLM | `openai/gpt-oss-120b` through Groq | Planning, grading, generation, and verification |
+| Dense retrieval | `BAAI/bge-base-en-v1.5` | Normalized semantic embeddings |
+| Sparse retrieval | BM25Okapi | Exact-term and lexical retrieval |
+| Reranking | `cross-encoder/ms-marco-MiniLM-L6-v2` | Query–chunk relevance scoring |
+| Vector storage | Embedded Qdrant | Persistent per-video vector collections |
+| Cache | Redis or in-memory TTL cache | Summary, notes, and quiz reuse |
+| Observability | Structured JSONL tracing | Stage timings, routes, scores, and retry outcomes |
+| Testing | pytest | Deterministic unit and benchmark-metric tests |
+
+## Repository structure
+
+```text
+app/
+├── api/              FastAPI routes and error translation
+├── database/         Qdrant and cache adapters
+├── evaluation/       Reusable retrieval metrics
+├── generation/       Answers, citations, summaries, notes, and quizzes
+├── ingestion/        YouTube access, transcript processing, and chunking
+├── llm/              Groq model client and structured-output handling
+├── observability/    Metrics and trace recording
+├── reasoning/        Planning, query rewriting, evidence grading, and grounding
+├── retrieval/        Dense search, BM25, fusion, and reranking
+├── schemas/          Pydantic transport and domain models
+├── config.py         Environment-backed settings
+├── main.py           FastAPI application assembly
+└── services.py       Ingestion and RAG orchestration
+
+frontend/             Streamlit interface and API client
+evaluation/           Benchmark preparation, execution, and results
+tests/                Automated tests
+docs/                 Detailed architecture documentation
+data/                 Generated local indexes, chunks, and traces
+```
+
+## Quick start
+
+### Requirements
 
 - Python 3.11 or newer
-- A Groq API key
-- Internet access to retrieve YouTube transcripts and download embedding and reranking models
+- A [Groq](https://groq.com/) API key
+- Internet access for YouTube transcripts and the first model download
 
-Qdrant runs in local persistent mode. Redis is optional; when `REDIS_URL` is empty or unavailable, the application uses an in-memory cache.
-
-## Setup
-
-Create and activate a virtual environment.
-
-Windows PowerShell:
+### Installation
 
 ```powershell
+git clone <repository-url>
+cd Youtube_Video_Q-A_System
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-```
-
-macOS/Linux:
-
-```bash
-python -m venv venv
-source venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
 pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-Copy `.env.example` to `.env` and set at least:
+Set the API key in `.env`:
 
 ```env
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
-Other settings, including ports, model names, storage paths, and Redis, can be configured through `.env.example`.
+Start the API and Streamlit interface together:
 
-## Run the application
-
-Start the API and interface together:
-
-```bash
+```powershell
 python run_app.py
 ```
 
-Open `http://localhost:8501`. The API runs at `http://127.0.0.1:8000` by default.
+Open **http://localhost:8501**. FastAPI runs at **http://127.0.0.1:8000** by default.
 
-To run the services separately:
+### Run services separately
 
-```bash
+```powershell
 uvicorn app.main:app --reload
 streamlit run frontend/app.py
 ```
 
-## API endpoints
+## API surface
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| `GET` | `/health` | Service health check |
-| `POST` | `/videos/process` | Ingest and index a video |
-| `GET` | `/videos/{video_id}` | Read stored video metadata |
-| `POST` | `/chat` | Answer a grounded question |
+| `GET` | `/health` | Report service and configuration health |
+| `POST` | `/videos/process` | Fetch, chunk, embed, and index a video |
+| `GET` | `/videos/{video_id}` | Return stored video metadata |
+| `POST` | `/chat` | Produce a grounded answer with citations |
 | `POST` | `/summary` | Generate a video summary |
 | `POST` | `/notes` | Generate study notes |
-| `POST` | `/quiz` | Generate a quiz |
+| `POST` | `/quiz` | Generate an interactive quiz |
 
-## Evaluation
+## Evaluation workflow
 
-The evaluation workflow uses 120 timestamp-grounded cases across 10 technical videos: 100 answerable questions and 20 unsupported questions.
-
-```bash
+```powershell
 python -m evaluation.prepare_ground_truth
 python -m evaluation.review_dataset
 python -m evaluation.run_benchmark
 ```
 
-The benchmark reports Recall@1/3/5, MRR, faithfulness, answer relevance, timestamp citation hit rate, abstention accuracy, corrective-retrieval recovery rate, and P50/P95 latency. Completed case IDs are preserved in `evaluation/results/raw_results.jsonl`, so rerunning the benchmark skips successful cases.
+The evaluation produces:
 
-See [evaluation/README.md](evaluation/README.md) for methodology and output details.
+```text
+evaluation/results/raw_results.jsonl
+evaluation/results/metrics.json
+evaluation/results/evaluation_report.md
+```
+
+Successful case IDs are checkpointed in the raw results, allowing interrupted or quota-limited runs to continue without repeating completed evaluations.
 
 ## Tests
 
-```bash
-pytest -q
+```powershell
+python -m pytest -q
 ```
 
-The tests cover deterministic logic without requiring Groq or YouTube network calls.
+Current test status: **20 passing tests**. The tests cover chunking helpers, retrieval fusion, citation construction, retrieval metrics, benchmark aggregation, quota parsing, and YouTube URL handling without requiring live Groq or YouTube requests.
 
-## Project structure
+## Configuration and storage
 
-```text
-app/
-  api/              FastAPI routes
-  database/         Local Qdrant and optional Redis integrations
-  evaluation/       Reusable retrieval metrics and evaluator
-  generation/       Answers, citations, summaries, notes, and quizzes
-  ingestion/        YouTube metadata, transcripts, and chunking
-  llm/              Groq client
-  observability/    Structured tracing and metrics
-  reasoning/        Query planning, evidence grading, and grounding
-  retrieval/        Dense, sparse, fusion, and reranking stages
-  schemas/          API and internal data models
-frontend/           Streamlit interface
-evaluation/         Benchmark preparation, execution, and results
-tests/              Automated tests
-data/               Generated video, vector, and trace data
-```
+Configuration is loaded from `.env` through `app/config.py`. The main settings cover the Groq model, ports, embedding and reranking models, chunk sizes, candidate counts, retry limits, storage paths, and optional Redis connection.
 
-## Runtime data
+Generated runtime data is stored locally:
 
-- `data/videos/`: video metadata and transcript chunks
-- `data/qdrant/`: persistent vector collections
-- `data/logs/traces.jsonl`: structured execution traces
+| Path | Contents |
+|---|---|
+| `data/videos/` | Video metadata and timestamped transcript chunks |
+| `data/qdrant/` | Persistent dense-vector collections |
+| `data/logs/traces.jsonl` | Structured ingestion and query traces |
 
-Do not delete `data/videos/` or `data/qdrant/` while an evaluation is in progress because the benchmark reads the indexed videos from these locations.
+Qdrant runs in embedded local mode, so no external vector-database service is required. When Redis is unavailable, generated-content caching falls back to process memory.
+
+## Engineering trade-offs
+
+- The frontend focuses on one active video at a time, keeping the interaction model simple and explicit.
+- Embedded Qdrant removes infrastructure overhead but favors a single local API process.
+- Dense and sparse retrieval improve recall at the cost of model initialization and reranking latency.
+- Grounding checks and bounded retries improve reliability while increasing end-to-end response time.
+- The current benchmark shows perfect Recall@5 but also identifies timestamp citation precision and latency as the clearest areas for further optimization.
+
+---
+
+<div align="center">
+
+**Built as an end-to-end AI engineering system: retrieval, reasoning, grounding, evaluation, and product delivery.**
+
+</div>
