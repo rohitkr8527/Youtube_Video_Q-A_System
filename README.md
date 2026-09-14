@@ -1,93 +1,84 @@
-# VideoRAG(Youtube Video Q&A System)
+# VideoRAG
 
-VideoRAG is an advanced, user-focused YouTube question-answering system built as an AI engineering project rather than a basic vector-search demo.
+VideoRAG is a YouTube question-answering application that produces grounded answers with clickable timestamp citations. It combines transcript ingestion, hybrid retrieval, reranking, query planning, evidence grading, corrective retrieval, and grounding verification behind a Streamlit interface and FastAPI backend.
 
-It uses timestamp-aware semantic chunking, dense + sparse hybrid retrieval, cross-encoder reranking, agentic query planning, self-corrective retrieval, grounded generation, evaluation, and internal tracing. The frontend stays intentionally simple and hides backend implementation details from users.
+## Features
 
-## Product features
+- Process a YouTube video from its URL.
+- Ask questions and maintain conversational context.
+- Cite supporting transcript sections with clickable timestamps.
+- Generate summaries, study notes, and multiple-choice quizzes.
+- Retry retrieval when the initial evidence is weak.
+- Decline unsupported questions when reliable evidence is unavailable.
+- Record structured traces for retrieval and generation operations.
 
-- Paste a YouTube URL and prepare the video for questions.
-- Ask natural follow-up questions in a chat interface.
-- Receive grounded answers with clickable timestamp sources.
-- Generate a structured summary.
-- Generate study notes.
-- Take an interactive multiple-choice quiz.
-- Automatically retry retrieval once when evidence is weak.
-- Refuse unsupported answers instead of hallucinating.
+## Architecture
 
-## AI engineering architecture
+The request pipeline consists of:
 
-1. YouTube transcript ingestion with timestamps.
-2. Semantic + timestamp-aware chunking.
-3. BGE dense embeddings stored in persistent local Qdrant.
-4. BM25 sparse retrieval.
-5. Reciprocal Rank Fusion.
-6. Cross-encoder reranking.
-7. GPT-OSS 120B query planning and rewriting.
-8. Evidence grading and corrective retrieval.
-9. GPT-OSS 120B grounded answer generation.
-10. Grounding verification with one controlled regeneration.
-11. Retrieval evaluation and JSONL tracing.
+1. Fetching timestamped YouTube transcripts.
+2. Semantic and timestamp-aware transcript chunking.
+3. Dense retrieval with BGE embeddings and local Qdrant storage.
+4. Sparse BM25 retrieval.
+5. Reciprocal Rank Fusion and cross-encoder reranking.
+6. Query planning, rewriting, and optional timestamp filtering.
+7. Evidence grading and one corrective-retrieval attempt.
+8. Grounded answer generation and one verification retry.
+9. Deterministic timestamp citation construction.
 
-Only one LLM is used throughout the project:
-
-```text
-openai/gpt-oss-120b via Groq
-```
+LLM operations use `openai/gpt-oss-120b` through Groq. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for implementation details.
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.11 or newer
 - A Groq API key
-- Internet access on first run to download embedding/reranker models and fetch YouTube transcripts
+- Internet access to retrieve YouTube transcripts and download embedding and reranking models
 
-Qdrant runs in persistent local mode, so the project does not need a separate vector database service.
+Qdrant runs in local persistent mode. Redis is optional; when `REDIS_URL` is empty or unavailable, the application uses an in-memory cache.
 
 ## Setup
 
-### 1. Create a virtual environment
+Create and activate a virtual environment.
 
 Windows PowerShell:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 ```
 
 macOS/Linux:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+python -m venv venv
+source venv/bin/activate
 ```
 
-### 2. Install dependencies
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Add environment variables
-
-Copy `.env.example` to `.env` and add your Groq key:
+Copy `.env.example` to `.env` and set at least:
 
 ```env
-GROQ_API_KEY=your_key_here
+GROQ_API_KEY=your_groq_api_key_here
 ```
 
-### 4. Start the complete product
+Other settings, including ports, model names, storage paths, and Redis, can be configured through `.env.example`.
+
+## Run the application
+
+Start the API and interface together:
 
 ```bash
 python run_app.py
 ```
 
-Then open:
+Open `http://localhost:8501`. The API runs at `http://127.0.0.1:8000` by default.
 
-```text
-http://localhost:8501
-```
-
-You can also start the services separately:
+To run the services separately:
 
 ```bash
 uvicorn app.main:app --reload
@@ -96,27 +87,29 @@ streamlit run frontend/app.py
 
 ## API endpoints
 
-```text
-GET  /health
-POST /videos/process
-GET  /videos/{video_id}
-POST /chat
-POST /summary
-POST /notes
-POST /quiz
-```
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/health` | Service health check |
+| `POST` | `/videos/process` | Ingest and index a video |
+| `GET` | `/videos/{video_id}` | Read stored video metadata |
+| `POST` | `/chat` | Answer a grounded question |
+| `POST` | `/summary` | Generate a video summary |
+| `POST` | `/notes` | Generate study notes |
+| `POST` | `/quiz` | Generate a quiz |
 
 ## Evaluation
 
-An example dataset is included at `evaluation/datasets/sample.jsonl`.
-
-Run retrieval evaluation after a video has been indexed:
+The evaluation workflow uses 120 timestamp-grounded cases across 10 technical videos: 100 answerable questions and 20 unsupported questions.
 
 ```bash
-python -m app.evaluation.evaluator --dataset evaluation/datasets/sample.jsonl
+python -m evaluation.prepare_ground_truth
+python -m evaluation.review_dataset
+python -m evaluation.run_benchmark
 ```
 
-The evaluator reports Recall@K, Precision@K, MRR, and NDCG. Expected relevant chunk IDs in the dataset should be updated for the video you evaluate.
+The benchmark reports Recall@1/3/5, MRR, faithfulness, answer relevance, timestamp citation hit rate, abstention accuracy, corrective-retrieval recovery rate, and P50/P95 latency. Completed case IDs are preserved in `evaluation/results/raw_results.jsonl`, so rerunning the benchmark skips successful cases.
+
+See [evaluation/README.md](evaluation/README.md) for methodology and output details.
 
 ## Tests
 
@@ -124,31 +117,32 @@ The evaluator reports Recall@K, Precision@K, MRR, and NDCG. Expected relevant ch
 pytest -q
 ```
 
-Tests are designed to cover pure logic without requiring Groq or YouTube network calls.
+The tests cover deterministic logic without requiring Groq or YouTube network calls.
 
 ## Project structure
 
 ```text
 app/
   api/              FastAPI routes
-  ingestion/        YouTube, transcript and chunking
-  retrieval/        Dense, sparse, fusion and reranking
-  reasoning/        Query planning, evidence grading, grounding
-  generation/       Answers, summaries, notes, quizzes and citations
-  database/         Qdrant and cache integrations
-  evaluation/       Retrieval metrics and evaluator
-  observability/    Structured tracing
-frontend/           Streamlit product UI
-evaluation/         Evaluation datasets/results
-tests/              Unit tests
+  database/         Local Qdrant and optional Redis integrations
+  evaluation/       Reusable retrieval metrics and evaluator
+  generation/       Answers, citations, summaries, notes, and quizzes
+  ingestion/        YouTube metadata, transcripts, and chunking
+  llm/              Groq client
+  observability/    Structured tracing and metrics
+  reasoning/        Query planning, evidence grading, and grounding
+  retrieval/        Dense, sparse, fusion, and reranking stages
+  schemas/          API and internal data models
+frontend/           Streamlit interface
+evaluation/         Benchmark preparation, execution, and results
+tests/              Automated tests
+data/               Generated video, vector, and trace data
 ```
 
-## Important design choices
+## Runtime data
 
-- The Streamlit UI never shows vector scores, model names, databases, chunk IDs, agent states, token counts, or internal prompts.
-- Corrective RAG is capped at one retrieval retry and one answer regeneration.
-- Deterministic tasks such as timestamp formatting, RRF, filtering, and citation URL creation are done in Python, not with the LLM.
-- Redis support is optional. If `REDIS_URL` is empty or Redis is unavailable, the application falls back to an in-memory cache.
-- This version intentionally supports one active video experience at a time in the frontend. Multi-video knowledge bases and playlists are out of scope for now.
+- `data/videos/`: video metadata and transcript chunks
+- `data/qdrant/`: persistent vector collections
+- `data/logs/traces.jsonl`: structured execution traces
 
-See `docs/ARCHITECTURE.md` for the finalized design specification.
+Do not delete `data/videos/` or `data/qdrant/` while an evaluation is in progress because the benchmark reads the indexed videos from these locations.
