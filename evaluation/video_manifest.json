@@ -1,0 +1,62 @@
+[
+  {
+    "video_id": "E0Hmnixke2g",
+    "url": "https://www.youtube.com/watch?v=E0Hmnixke2g",
+    "title": "All Machine Learning Algorithms Explained in 17 Minutes",
+    "topic": "machine learning algorithms"
+  },
+  {
+    "video_id": "hhk5ck4XH4o",
+    "url": "https://www.youtube.com/watch?v=hhk5ck4XH4o",
+    "title": "Scalability in System Design - Horizontal vs Vertical Scaling",
+    "topic": "system design scalability"
+  },
+  {
+    "video_id": "_eGUcvueviY",
+    "url": "https://www.youtube.com/watch?v=_eGUcvueviY",
+    "title": "Database Replication in System Design",
+    "topic": "database replication"
+  },
+  {
+    "video_id": "DpzMkfhV4Tg",
+    "url": "https://www.youtube.com/watch?v=DpzMkfhV4Tg",
+    "title": "CAP Theorem Explained in 6 Minutes",
+    "topic": "CAP theorem and distributed systems"
+  },
+  {
+    "video_id": "Yh4CrPHVBdE",
+    "url": "https://www.youtube.com/watch?v=Yh4CrPHVBdE",
+    "title": "6 SQL Joins You MUST Know! (Animated + Practice)",
+    "topic": "SQL joins"
+  },
+  {
+    "video_id": "GAe5oB742dw",
+    "url": "https://www.youtube.com/watch?v=GAe5oB742dw",
+    "title": "ACID Properties in Databases With Examples",
+    "topic": "database transactions and ACID"
+  },
+  {
+    "video_id": "pBASqUbZgkY",
+    "url": "https://www.youtube.com/watch?v=pBASqUbZgkY",
+    "title": "Every Type Of API You Must Know Explained!",
+    "topic": "API architectures and communication patterns"
+  },
+  {
+    "video_id": "7yNvsFrwpp0",
+    "url": "https://www.youtube.com/watch?v=7yNvsFrwpp0",
+    "title": "MCP vs API Explained: Do We Still Need API After MCP?",
+    "topic": "MCP versus APIs"
+  },
+  {
+    "video_id": "tzrwxLNHtRY",
+    "url": "https://www.youtube.com/watch?v=tzrwxLNHtRY",
+    "title": "Model Context Protocol (MCP) Explained",
+    "topic": "Model Context Protocol"
+  },
+  {
+    "video_id": "LPZh9BOjkQs",
+    "url": "https://www.youtube.com/watch?v=LPZh9BOjkQs",
+    "title": "Large Language Models explained briefly",
+    "topic": "large language models, pretraining and transformers"
+  }
+]

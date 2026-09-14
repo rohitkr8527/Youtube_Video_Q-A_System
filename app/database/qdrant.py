@@ -85,6 +85,9 @@ class DenseVectorStore:
             )
         return results
 
+    def close(self) -> None:
+        self.client.close()
+
 
 @lru_cache(maxsize=1)
 def get_vector_store() -> DenseVectorStore:
